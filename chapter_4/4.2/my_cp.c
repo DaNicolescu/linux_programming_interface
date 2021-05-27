@@ -3,23 +3,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-int create_sparse_file(char *file_name, uint64_t size)
-{
-    int fd;
-
-    fd = open(path, O_RDWR | O_CREAT, 0666);
-
-    if (fd == -1) {
-        return -1;
-    }
-    if (lseek(fd, size - 1, SEEK_CUR) == -1) {
-        return -1;
-    }
-    write(fd, "\0", 1);
-    close(fd);
-    return 0;
-}
-
 int write_data(int fd, char *buffer, size_t n)
 {
     size_t total_bytes_written = 0;
@@ -46,11 +29,16 @@ int write_data(int fd, char *buffer, size_t n)
 int copy_file(char *input_file_name, char *output_file_name)
 {
     int input_fd, output_fd;
-    int input_file_flags = O_WRONLY | O_CREAT | O_TRUNC;
-    int output_file_flags = O_RDONLY;
+    int input_file_flags = O_RDONLY;
+    int output_file_flags = O_WRONLY | O_CREAT | O_TRUNC;
     char buffer[BUFSIZ];
     ssize_t num_bytes_read;
+    size_t bytes_to_write;
+    size_t empty_space;
+    size_t i;
+    int buffer_start;
     int ret;
+    off_t lseek_ret;
 
     input_fd = open(input_file_name, input_file_flags);
 
@@ -86,24 +74,79 @@ int copy_file(char *input_file_name, char *output_file_name)
             break;
         }
 
-    //    ret = write_data(STDOUT_FILENO, buffer, (size_t)num_bytes_read);
+        bytes_to_write = 0;
+        buffer_start = -1;
+        empty_space = 0;
+        for (i = 0; i < num_bytes_read; i++)
+        {
+            if (buffer[i] != '\0')
+            {
+                if (buffer_start < 0)
+                    buffer_start = i;
 
-    //    if (ret)
-    //        return 1;
+                ++bytes_to_write;
 
-    //    ret = write_data(fd, buffer, (size_t)num_bytes_read);
+                if (empty_space > 0)
+                {
+                    lseek_ret = lseek(output_fd, empty_space, SEEK_CUR);
 
-    //    if (ret)
-    //        return 1;
+                    if (lseek_ret == -1)
+                    {
+                        perror("lseek");
 
-    //}
+                        return 1;
+                    }
 
-    //if (close(fd) != 0)
-    //{
-    //    perror("close");
+                    empty_space = 0;
+                }
+            }
+            else
+            {
+                if (bytes_to_write > 0)
+                {
+                    ret = write_data(output_fd, buffer + buffer_start,
+                                     bytes_to_write);
 
-    //    return 1;
-    //}
+                    if (ret)
+                        return 1;
+
+                    bytes_to_write = 0;
+                    buffer_start = -1;
+                }
+
+                ++empty_space;
+            }
+        }
+
+        if (bytes_to_write > 0)
+        {
+            ret = write_data(output_fd, buffer + buffer_start, bytes_to_write);
+
+            if (ret)
+                return 1;
+        }
+
+        if (empty_space > 0)
+        {
+            lseek_ret = lseek(output_fd, empty_space, SEEK_CUR);
+
+            if (lseek_ret == -1)
+            {
+                perror("lseek");
+
+                return 1;
+            }
+
+            empty_space = 0;
+         }
+    }
+
+    if ((close(input_fd) != 0) || (close(output_fd) != 0))
+    {
+        perror("close");
+
+        return 1;
+    }
 
     return 0;
 }
