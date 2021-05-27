@@ -136,9 +136,7 @@ int copy_file(char *input_file_name, char *output_file_name)
 
                 return 1;
             }
-
-            empty_space = 0;
-         }
+        }
     }
 
     if ((close(input_fd) != 0) || (close(output_fd) != 0))
