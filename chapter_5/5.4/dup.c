@@ -41,8 +41,6 @@ int main(int argc, char *argv[])
     int new_fd = -1;
     int fd;
     int flags = O_RDWR | O_CREAT;
-    char append_flag = 1;
-    long long num_bytes;
     int ret;
 
     if (argc < 2 || strcmp(argv[1], "--help") == 0)
