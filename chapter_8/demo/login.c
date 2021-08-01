@@ -46,15 +46,17 @@ int login()
     if (username[len - 1] == '\n')
         username[len - 1] = '\0';
 
+    // get user from /etc/passwd
     pwd = getpwnam(username);
 
     if (!pwd)
     {
-        printf("could not retrieve password record");
+        printf("Could not retrieve password record\n");
 
         return 1;
     }
 
+    // get user from /etc/shadow
     spwd = getspnam(username);
 
     if (!spwd && errno == EACCES)
@@ -64,11 +66,15 @@ int login()
         return 1;
     }
 
+    // if there is a shadow password recored, use it
     if (spwd)
         pwd->pw_passwd = spwd->sp_pwdp;
+    
+    password = getpass("Password: ");
 
     encrypted = crypt(password, pwd->pw_passwd);
 
+    // immediately remove the unencrypted password from the memory
     for (p = password; *p != '\0'; ++p)
         *p = '\0';
 
@@ -79,7 +85,16 @@ int login()
         return 1;
     }
 
+    if (!strcmp(encrypted, pwd->pw_passwd))
+    {
+        printf("Successfully authenticated: UID=%ld\n", (long)pwd->pw_uid);
+    }
+    else
+    {
+        printf("Incorrect password\n");
+    }
 
+    return 0;
 }
 
 int main(int argc, char *argv[])
