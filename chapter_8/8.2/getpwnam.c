@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
         return 0;
     }
-    
+
     printf("Did not find the name\n");
 
     return 1;
