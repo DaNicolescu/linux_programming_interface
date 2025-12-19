@@ -64,8 +64,3 @@ Chapter 61: Sockets: Advanced Topics
 Chapter 62: Terminals  
 Chapter 63: Alternative I/O Models  
 Chapter 64: Pseudoterminals  
-
-## presentation TODO
-- show how many chapters there are
-- the author also hosts man.org
-- create presentation as you read the book
